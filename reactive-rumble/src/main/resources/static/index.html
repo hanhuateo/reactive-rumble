@@ -88,6 +88,36 @@
                 });
             });
         }
+
+        // Keep track of the current ID so we know who to move
+        let myPlayerId = null;
+
+        // Update joinBtn logic to store the ID
+        joinBtn.onclick = () => {
+            myPlayerId = "User_" + Math.floor(Math.random() * 1000);
+            fetch(`/game/join?id=${myPlayerId}`, { method: 'POST' })
+                .then(() => {
+                    status.innerText = `Status: Playing as ${myPlayerId}`;
+                    joinBtn.disabled = true;
+                });
+        };
+
+        // Keyboard Listener
+        window.addEventListener('keydown', (e) => {
+            if (!myPlayerId) return;
+
+            let direction = null;
+            switch (e.key.toLowerCase()) {
+                case 'arrowup': case 'w': direction = 'UP'; break;
+                case 'arrowdown': case 's': direction = 'DOWN'; break;
+                case 'arrowleft': case 'a': direction = 'LEFT'; break;
+                case 'arrowright': case 'd': direction = 'RIGHT'; break;
+            }
+
+            if (direction) {
+                fetch(`/game/move?id=${myPlayerId}&dir=${direction}`, { method: 'POST' });
+            }
+        });
     </script>
 </body>
 

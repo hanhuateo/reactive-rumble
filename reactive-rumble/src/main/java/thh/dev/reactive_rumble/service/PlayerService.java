@@ -24,13 +24,26 @@ public class PlayerService {
         players.put(id, new Player(id, initialBody, Direction.UP));
     }
 
-    public void updateDirection(String id, Direction direction) {
-        Player player = players.get(id);
-        if (player != null) {
-            // In a real game, you'd check to make sure they aren't
-            // trying to turn 180 degrees into themselves
-            players.put(id, new Player(id, player.body(), direction));
+    public void updateDirection(String id, Direction newDir) {
+        Player p = players.get(id);
+        if (p == null)
+            return;
+
+        Direction currentDir = p.direction();
+
+        // Prevent 180-degree turns
+        boolean isOpposite = (currentDir == Direction.UP && newDir == Direction.DOWN) ||
+                (currentDir == Direction.DOWN && newDir == Direction.UP) ||
+                (currentDir == Direction.LEFT && newDir == Direction.RIGHT) ||
+                (currentDir == Direction.RIGHT && newDir == Direction.LEFT);
+
+        if (!isOpposite) {
+            players.put(id, new Player(id, p.body(), newDir));
         }
+    }
+
+    public void updatePlayer(Player player) {
+        players.put(player.id(), player);
     }
 
     public Map<String, Player> getActivePlayers() {

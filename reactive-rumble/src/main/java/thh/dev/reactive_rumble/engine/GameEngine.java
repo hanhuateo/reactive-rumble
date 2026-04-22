@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.stereotype.Service;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import thh.dev.reactive_rumble.model.GameState;
@@ -17,6 +18,7 @@ import thh.dev.reactive_rumble.model.Point;
 import thh.dev.reactive_rumble.service.PlayerService;
 
 @Service
+@Slf4j
 public class GameEngine {
     private final PlayerService playerService;
     private final Sinks.Many<GameState> gameSink = Sinks.many().replay().latest();
@@ -26,7 +28,7 @@ public class GameEngine {
         this.playerService = playerService;
         this.state = new AtomicReference<>(new GameState(Map.of(), new Point(5, 5)));
 
-        Flux.interval(Duration.ofMillis(100))
+        Flux.interval(Duration.ofMillis(1000))
                 .map(tick -> moveSnakes()) // Move every snake on every tick
                 .doOnNext(newState -> {
                     state.set(newState);
@@ -55,7 +57,13 @@ public class GameEngine {
             body.add(0, newHead);
             body.remove(body.size() - 1);
 
-            movedPlayers.put(id, new Player(id, body, player.direction()));
+            // 1. Create the updated player object
+            Player movedPlayer = new Player(id, body, player.direction());
+
+            // 2. SAVE it back to the service so the NEXT tick starts from here
+            playerService.updatePlayer(movedPlayer);
+
+            movedPlayers.put(id, movedPlayer);
         });
 
         return new GameState(movedPlayers, state.get().food());

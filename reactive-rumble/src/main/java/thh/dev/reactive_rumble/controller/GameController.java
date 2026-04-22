@@ -35,7 +35,7 @@ public class GameController {
     // Handle player movement input
     @PostMapping("/move")
     public Mono<Void> move(@RequestParam String id, @RequestParam Direction dir) {
-        // TODO: Update player direction in the state
+        playerService.updateDirection(id, dir);
         return Mono.empty();
     }
 
