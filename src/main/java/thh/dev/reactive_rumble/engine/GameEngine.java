@@ -28,7 +28,7 @@ public class GameEngine {
         this.playerService = playerService;
         this.state = new AtomicReference<>(new GameState(Map.of(), new Point(5, 5)));
 
-        Flux.interval(Duration.ofMillis(1000))
+        Flux.interval(Duration.ofMillis(100))
                 .map(tick -> moveSnakes()) // Move every snake on every tick
                 .doOnNext(newState -> {
                     state.set(newState);
