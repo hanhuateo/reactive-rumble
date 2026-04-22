@@ -12,14 +12,17 @@ import reactor.core.publisher.Mono;
 import thh.dev.reactive_rumble.engine.GameEngine;
 import thh.dev.reactive_rumble.model.Direction;
 import thh.dev.reactive_rumble.model.GameState;
+import thh.dev.reactive_rumble.service.PlayerService;
 
 @RestController
 @RequestMapping("/game")
 public class GameController {
     private final GameEngine engine;
+    private final PlayerService playerService;
 
-    public GameController(GameEngine engine) {
+    public GameController(GameEngine engine, PlayerService playerService) {
         this.engine = engine;
+        this.playerService = playerService;
     }
 
     // Stream the game state to the frontend
@@ -34,5 +37,11 @@ public class GameController {
     public Mono<Void> move(@RequestParam String id, @RequestParam Direction dir) {
         // TODO: Update player direction in the state
         return Mono.empty();
+    }
+
+    @PostMapping("/join")
+    public Mono<String> join(@RequestParam String id) {
+        playerService.addPlayer(id);
+        return Mono.just("Joined as " + id);
     }
 }

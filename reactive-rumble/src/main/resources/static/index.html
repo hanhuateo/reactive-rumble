@@ -1,23 +1,93 @@
 <!DOCTYPE html>
 <html>
 
+<head>
+    <title>Reactive Rumble</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            background: #222;
+            color: #eee;
+        }
+
+        #game-canvas {
+            border: 2px solid #555;
+            background: #000;
+            margin-top: 20px;
+        }
+
+        .controls {
+            margin: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+
 <body>
-    <h2>Reactive Rumble Console</h2>
-    <div id="output">Connecting...</div>
+    <h1>Reactive Rumble</h1>
+
+    <div class="controls">
+        <button id="join-btn">Join Game</button>
+    </div>
+
+    <div id="status">Status: Disconnected</div>
+    <canvas id="game-canvas" width="400" height="400"></canvas>
 
     <script>
+        const status = document.getElementById('status');
+        const joinBtn = document.getElementById('join-btn');
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // 1. Connect to the Reactive Stream
         const eventSource = new EventSource('/game/stream');
-        const output = document.getElementById('output');
+
+        eventSource.onopen = () => status.innerText = "Status: Connected (Watching)";
 
         eventSource.onmessage = (event) => {
             const state = JSON.parse(event.data);
-            output.innerText = "Active Players: " + Object.keys(state.players).length;
-            console.log(state);
+            drawGame(state);
         };
 
-        eventSource.onerror = () => {
-            output.innerText = "Connection lost. Retrying...";
+        // 2. Function to Join the Game
+        joinBtn.onclick = () => {
+            const playerId = "User_" + Math.floor(Math.random() * 1000);
+
+            fetch(`/game/join?id=${playerId}`, { method: 'POST' })
+                .then(resp => {
+                    if (resp.ok) {
+                        status.innerText = `Status: Playing as ${playerId}`;
+                        joinBtn.disabled = true; // Prevent double joining
+                    }
+                });
         };
+
+        // 3. Simple Render Logic
+        function drawGame(state) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw every player's snake
+            Object.values(state.players).forEach(player => {
+                ctx.fillStyle = "#00ff00"; // Green for snakes
+                player.body.forEach(segment => {
+                    ctx.fillRect(segment.x * 10, segment.y * 10, 9, 9);
+                });
+            });
+        }
     </script>
 </body>
 
