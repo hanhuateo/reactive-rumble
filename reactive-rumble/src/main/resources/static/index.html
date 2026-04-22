@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <h2>Reactive Rumble Console</h2>
+    <div id="output">Connecting...</div>
+
+    <script>
+        const eventSource = new EventSource('/game/stream');
+        const output = document.getElementById('output');
+
+        eventSource.onmessage = (event) => {
+            const state = JSON.parse(event.data);
+            output.innerText = "Active Players: " + Object.keys(state.players).length;
+            console.log(state);
+        };
+
+        eventSource.onerror = () => {
+            output.innerText = "Connection lost. Retrying...";
+        };
+    </script>
+</body>
+
+</html>
