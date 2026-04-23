@@ -41,11 +41,13 @@ public class GameEngine {
         Map<String, Player> currentPlayers = playerService.getActivePlayers();
         Map<String, Player> movedPlayers = new ConcurrentHashMap<>();
 
+        // Define your grid size (matches the 400x400 canvas / 10px blocks)
+        int gridSize = 40;
+
         currentPlayers.forEach((id, player) -> {
             List<Point> body = new ArrayList<>(player.body());
             Point head = body.get(0);
 
-            // Calculate new head position
             Point newHead = switch (player.direction()) {
                 case UP -> new Point(head.x(), head.y() - 1);
                 case DOWN -> new Point(head.x(), head.y() + 1);
@@ -53,17 +55,30 @@ public class GameEngine {
                 case RIGHT -> new Point(head.x() + 1, head.y());
             };
 
-            // Movement logic: Add new head, remove old tail
-            body.add(0, newHead);
-            body.remove(body.size() - 1);
+            // --- COLLISION DETECTION ---
 
-            // 1. Create the updated player object
-            Player movedPlayer = new Player(id, body, player.direction());
+            // 1. Wall Collision
+            boolean hitWall = newHead.x() < 0 || newHead.x() >= gridSize ||
+                    newHead.y() < 0 || newHead.y() >= gridSize;
 
-            // 2. SAVE it back to the service so the NEXT tick starts from here
-            playerService.updatePlayer(movedPlayer);
+            // 2. Self or Other Player Collision
+            // We check if the newHead exists in ANY player's body
+            boolean hitSnake = currentPlayers.values().stream()
+                    .flatMap(p -> p.body().stream())
+                    .anyMatch(segment -> segment.equals(newHead));
 
-            movedPlayers.put(id, movedPlayer);
+            if (hitWall || hitSnake) {
+                log.info("Collision! Player {} is out.", id);
+                playerService.removePlayer(id); // We'll add this method next
+            } else {
+                // No collision? Move as normal
+                body.add(0, newHead);
+                body.remove(body.size() - 1);
+
+                Player movedPlayer = new Player(id, body, player.direction());
+                playerService.updatePlayer(movedPlayer);
+                movedPlayers.put(id, movedPlayer);
+            }
         });
 
         return new GameState(movedPlayers, state.get().food());

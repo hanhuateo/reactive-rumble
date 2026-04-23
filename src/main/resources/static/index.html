@@ -60,19 +60,24 @@
 
         eventSource.onmessage = (event) => {
             const state = JSON.parse(event.data);
+
+            // Check if I was playing but now I'm not in the list
+            if (myPlayerId && !state.players[myPlayerId]) {
+                status.innerText = "Status: Game Over! Click Join to try again.";
+                myPlayerId = null;
+                joinBtn.disabled = false;
+            }
+
             drawGame(state);
         };
 
         // 2. Function to Join the Game
         joinBtn.onclick = () => {
-            const playerId = "User_" + Math.floor(Math.random() * 1000);
-
-            fetch(`/game/join?id=${playerId}`, { method: 'POST' })
-                .then(resp => {
-                    if (resp.ok) {
-                        status.innerText = `Status: Playing as ${playerId}`;
-                        joinBtn.disabled = true; // Prevent double joining
-                    }
+            myPlayerId = "User_" + Math.floor(Math.random() * 1000);
+            fetch(`/game/join?id=${myPlayerId}`, { method: 'POST' })
+                .then(() => {
+                    status.innerText = `Status: Playing as ${myPlayerId}`;
+                    joinBtn.disabled = true;
                 });
         };
 
@@ -91,16 +96,6 @@
 
         // Keep track of the current ID so we know who to move
         let myPlayerId = null;
-
-        // Update joinBtn logic to store the ID
-        joinBtn.onclick = () => {
-            myPlayerId = "User_" + Math.floor(Math.random() * 1000);
-            fetch(`/game/join?id=${myPlayerId}`, { method: 'POST' })
-                .then(() => {
-                    status.innerText = `Status: Playing as ${myPlayerId}`;
-                    joinBtn.disabled = true;
-                });
-        };
 
         // Keyboard Listener
         window.addEventListener('keydown', (e) => {

@@ -49,4 +49,8 @@ public class PlayerService {
     public Map<String, Player> getActivePlayers() {
         return players;
     }
+
+    public void removePlayer(String id) {
+        players.remove(id);
+    }
 }
