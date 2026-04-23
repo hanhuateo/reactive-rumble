@@ -81,14 +81,21 @@
                 });
         };
 
-        // 3. Simple Render Logic
         function drawGame(state) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw every player's snake
+            // 1. Draw Food
+            if (state.food) {
+                ctx.fillStyle = "#ff4444"; // Red for food
+                ctx.fillRect(state.food.x * 10, state.food.y * 10, 9, 9);
+            }
+
+            // 2. Draw Snakes
             Object.values(state.players).forEach(player => {
                 ctx.fillStyle = "#00ff00"; // Green for snakes
-                player.body.forEach(segment => {
+                player.body.forEach((segment, index) => {
+                    // Make the head a slightly different color
+                    ctx.fillStyle = index === 0 ? "#88ff88" : "#00ff00";
                     ctx.fillRect(segment.x * 10, segment.y * 10, 9, 9);
                 });
             });
