@@ -5,7 +5,8 @@
 ### Architecture Overview (Phase 1)
 
 * **Reactive Heartbeat:** Uses **Project Reactor** (`Flux.interval`) to drive a server-side authoritative game loop at 10Hz (100ms ticks).
-* **Uni-directional Data Flow:** **Downstream:** Server-Sent Events (**SSE**) stream full `GameState` updates to clients in real-time.
+* **Uni-directional Data Flow:**
+    * **Downstream:** Server-Sent Events (**SSE**) stream full `GameState` updates to clients in real-time.
     * **Upstream:** RESTful API endpoints handle player joining and asynchronous movement inputs.
 * **State Management:** Utilizes **AtomicReferences** and **Concurrent Maps** to ensure thread-safe state transitions and consistency across asynchronous user events.
 * **Authoritative Logic:** All collision detection (walls, self, and opponents), food spawning, and snake growth are calculated server-side to prevent client-side cheating.
