@@ -78,7 +78,7 @@ public class GameEngine {
 
             if (hitWall || hitSnake) {
                 log.info("Collision! Player {} is out.", id);
-                this.playerService.removePlayer(id); // We'll add this method next
+                this.playerService.removePlayer(id);
             } else {
                 // No collision? Move as normal
                 body.add(0, newHead);
