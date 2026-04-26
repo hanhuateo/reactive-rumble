@@ -45,6 +45,11 @@
     </div>
 
     <div id="status">Status: Disconnected</div>
+    <div id="leaderboard"
+        style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; width: 150px;">
+        <h3 style="margin-top: 0; color: #ffcc00;">Top Snakes</h3>
+        <ul id="score-list" style="list-style: none; padding: 0; font-family: monospace;"></ul>
+    </div>
     <canvas id="game-canvas" width="400" height="400"></canvas>
 
     <script>
@@ -120,6 +125,21 @@
                 fetch(`/game/move?id=${myPlayerId}&dir=${direction}`, { method: 'POST' });
             }
         });
+
+        function updateLeaderboard() {
+            fetch('/game/leaderboard')
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('score-list');
+                    list.innerHTML = data
+                        .map(entry => `<li>${entry.playerId}: ${entry.score}</li>`)
+                        .join('');
+                });
+        }
+
+        // Refresh the leaderboard every 1 second
+        setInterval(updateLeaderboard, 1000);
+        updateLeaderboard(); // Initial call
     </script>
 </body>
 

@@ -18,17 +18,20 @@ import reactor.core.publisher.Sinks;
 import thh.dev.reactive_rumble.model.GameState;
 import thh.dev.reactive_rumble.model.Player;
 import thh.dev.reactive_rumble.model.Point;
+import thh.dev.reactive_rumble.service.LeaderboardService;
 import thh.dev.reactive_rumble.service.PlayerService;
 
 @Service
 @Slf4j
 public class GameEngine {
     private final PlayerService playerService;
+    private final LeaderboardService leaderboardService;
     private final Sinks.Many<GameState> gameSink = Sinks.many().replay().latest();
     private final AtomicReference<GameState> state;
 
-    public GameEngine(PlayerService playerService) {
+    public GameEngine(PlayerService playerService, LeaderboardService leaderboardService) {
         this.playerService = playerService;
+        this.leaderboardService = leaderboardService;
         this.state = new AtomicReference<>(new GameState(Map.of(), new Point(5, 5)));
 
         Flux.interval(Duration.ofMillis(100))
@@ -79,15 +82,20 @@ public class GameEngine {
             if (hitWall || hitSnake) {
                 log.info("Collision! Player {} is out.", id);
                 this.playerService.removePlayer(id);
+                this.leaderboardService.removeScore(id).subscribe();
             } else {
                 // No collision? Move as normal
                 body.add(0, newHead);
                 // --- FOOD LOGIC ---
                 if (newHead.equals(food)) {
-                    // EATEN: Don't remove tail (snake grows)
-                    // We'll update the food position in the return statement
-                    log.info("Player {} ate the food!", id);
                     foodEaten = true;
+                    // 1. Calculate new score (body length)
+                    int newScore = body.size() + 1;
+
+                    // 2. Fire and forget the update to Redis
+                    this.leaderboardService.updateScore(id, newScore).subscribe();
+
+                    log.info("Score updated in Redis for {}", id);
                 } else {
                     // NORMAL MOVE: Remove tail
                     body.remove(body.size() - 1);

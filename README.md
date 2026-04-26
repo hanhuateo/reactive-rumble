@@ -12,6 +12,6 @@
 * **Authoritative Logic:** All collision detection (walls, self, and opponents), food spawning, and snake growth are calculated server-side to prevent client-side cheating.
 
 ### Tech Stack
-* **Backend:** Java 25, Spring Boot 3 (WebFlux), Project Reactor, Lombok.
+* **Backend:** Java 21, Spring Boot 3 (WebFlux), Project Reactor, Lombok.
 * **Frontend:** HTML5 Canvas, Vanilla JavaScript (EventSource API).
 * **Build Tool:** Gradle.
