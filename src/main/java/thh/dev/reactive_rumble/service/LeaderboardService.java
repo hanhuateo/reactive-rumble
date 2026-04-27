@@ -18,18 +18,18 @@ public class LeaderboardService {
 
     // Adds/Updates a player's score
     public Mono<Double> updateScore(String playerId, int score) {
-        return redisTemplate.opsForZSet()
+        return this.redisTemplate.opsForZSet()
                 .add(LEADERBOARD_KEY, playerId, score)
                 .thenReturn((double) score);
     }
 
     public Mono<Void> removeScore(String playerId) {
-        return redisTemplate.opsForZSet().remove(LEADERBOARD_KEY, playerId).then();
+        return this.redisTemplate.opsForZSet().remove(LEADERBOARD_KEY, playerId).then();
     }
 
     // Gets Top 10 Players
     public Flux<ZSetOperations.TypedTuple<String>> getTopScores() {
-        return redisTemplate.opsForZSet()
+        return this.redisTemplate.opsForZSet()
                 .reverseRangeWithScores(LEADERBOARD_KEY, Range.closed(0L, 9L));
     }
 }

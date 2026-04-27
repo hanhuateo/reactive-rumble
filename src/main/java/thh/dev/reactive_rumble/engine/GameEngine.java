@@ -101,7 +101,7 @@ public class GameEngine {
                     body.remove(body.size() - 1);
                 }
 
-                Player movedPlayer = new Player(id, body, player.direction());
+                Player movedPlayer = new Player(id, player.username(), body, player.direction(), player.color());
                 this.playerService.updatePlayer(movedPlayer);
                 movedPlayers.put(id, movedPlayer);
             }
@@ -109,7 +109,7 @@ public class GameEngine {
         ;
 
         // If food was eaten by ANYONE, spawn new food
-        Point nextFood = foodEaten ? spawnFood(movedPlayers) : food;
+        Point nextFood = foodEaten ? this.spawnFood(movedPlayers) : food;
 
         return new GameState(movedPlayers, nextFood);
     }

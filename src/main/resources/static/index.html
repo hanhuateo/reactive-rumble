@@ -40,8 +40,12 @@
 <body>
     <h1>Reactive Rumble</h1>
 
-    <div class="controls">
-        <button id="join-btn">Join Game</button>
+    <div>
+        <input type="text" id="username" placeholder="Enter Name">
+        <input type="color" id="playerColor" value="#00ff00">
+    </div>
+    <div>
+        <button id="joinBtn">Join Game</button>
     </div>
 
     <div id="status">Status: Disconnected</div>
@@ -54,7 +58,7 @@
 
     <script>
         const status = document.getElementById('status');
-        const joinBtn = document.getElementById('join-btn');
+        const joinBtn = document.getElementById('joinBtn');
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
 
@@ -77,13 +81,22 @@
         };
 
         // 2. Function to Join the Game
-        joinBtn.onclick = () => {
-            myPlayerId = "User_" + Math.floor(Math.random() * 1000);
-            fetch(`/game/join?id=${myPlayerId}`, { method: 'POST' })
-                .then(() => {
-                    status.innerText = `Status: Playing as ${myPlayerId}`;
-                    joinBtn.disabled = true;
-                });
+        joinBtn.onclick = async () => {
+            const id = "User_" + Math.floor(Math.random() * 1000);
+            const username = document.getElementById('username').value;
+            const color = document.getElementById('playerColor').value;
+            // a. Save Profile to Redis
+            await fetch(`/game/profile/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, color })
+            });
+
+            // b. Join the game
+            await fetch(`/game/join/${id}`, { method: 'POST' });
+
+            myPlayerId = id;
+            joinBtn.disabled = true;
         };
 
         function drawGame(state) {
@@ -97,10 +110,8 @@
 
             // 2. Draw Snakes
             Object.values(state.players).forEach(player => {
-                ctx.fillStyle = "#00ff00"; // Green for snakes
+                ctx.fillStyle = player.color;
                 player.body.forEach((segment, index) => {
-                    // Make the head a slightly different color
-                    ctx.fillStyle = index === 0 ? "#88ff88" : "#00ff00";
                     ctx.fillRect(segment.x * 10, segment.y * 10, 9, 9);
                 });
             });
