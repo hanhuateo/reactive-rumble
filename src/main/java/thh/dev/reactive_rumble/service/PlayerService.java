@@ -2,67 +2,97 @@ package thh.dev.reactive_rumble.service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import thh.dev.reactive_rumble.model.Direction;
 import thh.dev.reactive_rumble.model.Player;
 import thh.dev.reactive_rumble.model.Point;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class PlayerService {
-    // A thread-safe map of current players
-    private final Map<String, Player> players = new ConcurrentHashMap<>();
+    private final ReactiveStringRedisTemplate redisTemplate;
     private final ProfileService profileService;
+    private final ObjectMapper objectMapper;
+
+    private static final String PLAYERS_KEY = "game:active_players";
 
     public Mono<Void> addPlayer(String id) {
         return this.profileService.getProfile(id)
-                .defaultIfEmpty(Map.of("username", "Guest_" + id, "color", "#00ff00"))
-                .map(profile -> {
-                    String username = (String) profile.getOrDefault("username", "Guest");
-                    String color = (String) profile.getOrDefault("color", "#00ff00");
-                    // Initial snake at (10,10)
-                    List<Point> initialBody = List.of(new Point(10, 10), new Point(10, 11), new Point(10, 12));
-                    Player newPlayer = new Player(id, username, initialBody, Direction.UP, color);
-
-                    this.players.put(id, newPlayer);
-                    return newPlayer;
-                }).then();
+                .defaultIfEmpty(Map.of("username", "Guest", "color", "#00ff00"))
+                .flatMap(profile -> {
+                    Player newPlayer = new Player(
+                            id,
+                            (String) profile.get("username"),
+                            List.of(new Point(10, 10), new Point(10, 11), new Point(10, 12)),
+                            Direction.UP,
+                            (String) profile.get("color"));
+                    return this.saveToRedis(newPlayer);
+                });
     }
 
-    public void updateDirection(String id, Direction newDir) {
-        Player p = this.players.get(id);
-        if (p == null)
-            return;
-
-        Direction currentDir = p.direction();
-
-        // Prevent 180-degree turns
-        boolean isOpposite = (currentDir == Direction.UP && newDir == Direction.DOWN) ||
-                (currentDir == Direction.DOWN && newDir == Direction.UP) ||
-                (currentDir == Direction.LEFT && newDir == Direction.RIGHT) ||
-                (currentDir == Direction.RIGHT && newDir == Direction.LEFT);
-
-        if (!isOpposite) {
-            this.players.put(id, new Player(id, p.username(), p.body(), newDir, p.color()));
+    public Mono<Void> saveToRedis(Player player) {
+        try {
+            String json = this.objectMapper.writeValueAsString(player);
+            return this.redisTemplate.opsForHash().put(PLAYERS_KEY, player.id(), json).then();
+        } catch (Exception e) {
+            return Mono.error(e);
         }
     }
 
-    public void updatePlayer(Player player) {
-        this.players.put(player.id(), player);
+    public Mono<Void> updateDirection(String id, Direction newDirection) {
+        return this.redisTemplate.opsForHash().get(PLAYERS_KEY, id)
+                .flatMap(json -> {
+                    try {
+                        // 1. Read & Deserialize
+                        Player player = objectMapper.readValue((String) json, Player.class);
+                        Direction currentDir = player.direction();
+
+                        boolean isOpposite = (currentDir == Direction.UP && newDirection == Direction.DOWN) ||
+                                (currentDir == Direction.DOWN && newDirection == Direction.UP) ||
+                                (currentDir == Direction.LEFT && newDirection == Direction.RIGHT) ||
+                                (currentDir == Direction.RIGHT && newDirection == Direction.LEFT);
+
+                        if (!isOpposite) {
+                            // 2. Modify (Create a new record with the updated direction)
+                            Player updatedPlayer = new Player(
+                                    player.id(),
+                                    player.username(),
+                                    player.body(),
+                                    newDirection,
+                                    player.color());
+
+                            // 3. Write back to Redis
+                            return this.saveToRedis(updatedPlayer);
+                        }
+
+                        return Mono.empty();
+                    } catch (Exception e) {
+                        return Mono.error(e);
+                    }
+                });
     }
 
-    public Map<String, Player> getActivePlayers() {
-        return this.players;
+    public Flux<Player> getAllPlayers() {
+        return this.redisTemplate.opsForHash().values(PLAYERS_KEY)
+                .map(obj -> {
+                    try {
+                        return this.objectMapper.readValue((String) obj, Player.class);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
-    public void removePlayer(String id) {
-        this.players.remove(id);
+    public Mono<Void> removePlayer(String id) {
+        return this.redisTemplate.opsForHash().remove(PLAYERS_KEY, id).then();
     }
 }

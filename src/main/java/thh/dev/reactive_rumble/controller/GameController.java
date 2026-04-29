@@ -48,8 +48,7 @@ public class GameController {
     // Handle player movement input
     @PostMapping("/move")
     public Mono<Void> move(@RequestParam String id, @RequestParam Direction dir) {
-        this.playerService.updateDirection(id, dir);
-        return Mono.empty();
+        return this.playerService.updateDirection(id, dir);
     }
 
     @PostMapping("/join/{id}")
