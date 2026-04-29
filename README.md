@@ -5,7 +5,7 @@ A high-performance, real-time multiplayer Snake game built with **Spring Boot We
 ### Architecture (Phase 2 Evolution)
 Originally built with local in-memory state, this project has been refactored into a **stateless architecture**. The game engine can now be scaled horizontally across multiple server instances while maintaining a single global "Source of Truth" for game state.
 
-* **Backend:** Java 21, Spring Boot 3.x, Project Reactor (WebFlux).
+* **Backend:** Java 21, Spring Boot 4, Project Reactor (WebFlux).
 * **Database:** Redis (Reactive Stack).
 * **Frontend:** Vanilla JS with Server-Sent Events (SSE) for real-time updates.
 
