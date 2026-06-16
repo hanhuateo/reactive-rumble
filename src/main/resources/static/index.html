@@ -1,157 +1,17 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 
 <head>
-    <title>Reactive Rumble</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            text-align: center;
-            background: #222;
-            color: #eee;
-        }
-
-        #game-canvas {
-            border: 2px solid #555;
-            background: #000;
-            margin-top: 20px;
-        }
-
-        .controls {
-            margin: 20px;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
-
-        button:hover {
-            background: #218838;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reactive Rumble</title>
+  <script type="module" crossorigin src="/assets/index-D6GHJ5d3.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-C6c-CF1b.css">
 </head>
 
 <body>
-    <h1>Reactive Rumble</h1>
-
-    <div>
-        <input type="text" id="username" placeholder="Enter Name">
-        <input type="color" id="playerColor" value="#00ff00">
-    </div>
-    <div>
-        <button id="joinBtn">Join Game</button>
-    </div>
-
-    <div id="status">Status: Disconnected</div>
-    <div id="leaderboard"
-        style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; width: 150px;">
-        <h3 style="margin-top: 0; color: #ffcc00;">Top Snakes</h3>
-        <ul id="score-list" style="list-style: none; padding: 0; font-family: monospace;"></ul>
-    </div>
-    <canvas id="game-canvas" width="400" height="400"></canvas>
-
-    <script>
-        const status = document.getElementById('status');
-        const joinBtn = document.getElementById('joinBtn');
-        const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
-
-        // 1. Connect to the Reactive Stream
-        const eventSource = new EventSource('/game/stream');
-
-        eventSource.onopen = () => status.innerText = "Status: Connected (Watching)";
-
-        eventSource.onmessage = (event) => {
-            const state = JSON.parse(event.data);
-
-            // Check if I was playing but now I'm not in the list
-            if (myPlayerId && !state.players[myPlayerId]) {
-                status.innerText = "Status: Game Over! Click Join to try again.";
-                myPlayerId = null;
-                joinBtn.disabled = false;
-            }
-
-            drawGame(state);
-        };
-
-        // 2. Function to Join the Game
-        joinBtn.onclick = async () => {
-            const id = "User_" + Math.floor(Math.random() * 1000);
-            const username = document.getElementById('username').value;
-            const color = document.getElementById('playerColor').value;
-            // a. Save Profile to Redis
-            await fetch(`/game/profile/${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, color })
-            });
-
-            // b. Join the game
-            await fetch(`/game/join/${id}`, { method: 'POST' });
-
-            myPlayerId = id;
-            joinBtn.disabled = true;
-        };
-
-        function drawGame(state) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 1. Draw Food
-            if (state.food) {
-                ctx.fillStyle = "#ff4444"; // Red for food
-                ctx.fillRect(state.food.x * 10, state.food.y * 10, 9, 9);
-            }
-
-            // 2. Draw Snakes
-            Object.values(state.players).forEach(player => {
-                ctx.fillStyle = player.color;
-                player.body.forEach((segment, index) => {
-                    ctx.fillRect(segment.x * 10, segment.y * 10, 9, 9);
-                });
-            });
-        }
-
-        // Keep track of the current ID so we know who to move
-        let myPlayerId = null;
-
-        // Keyboard Listener
-        window.addEventListener('keydown', (e) => {
-            if (!myPlayerId) return;
-
-            let direction = null;
-            switch (e.key.toLowerCase()) {
-                case 'arrowup': case 'w': direction = 'UP'; break;
-                case 'arrowdown': case 's': direction = 'DOWN'; break;
-                case 'arrowleft': case 'a': direction = 'LEFT'; break;
-                case 'arrowright': case 'd': direction = 'RIGHT'; break;
-            }
-
-            if (direction) {
-                fetch(`/game/move?id=${myPlayerId}&dir=${direction}`, { method: 'POST' });
-            }
-        });
-
-        function updateLeaderboard() {
-            fetch('/game/leaderboard')
-                .then(response => response.json())
-                .then(data => {
-                    const list = document.getElementById('score-list');
-                    list.innerHTML = data
-                        .map(entry => `<li>${entry.playerId}: ${entry.score}</li>`)
-                        .join('');
-                });
-        }
-
-        // Refresh the leaderboard every 1 second
-        setInterval(updateLeaderboard, 1000);
-        updateLeaderboard(); // Initial call
-    </script>
+  <div id="root"></div>
 </body>
 
 </html>

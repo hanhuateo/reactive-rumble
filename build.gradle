@@ -24,8 +24,8 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webflux-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webflux'
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
@@ -34,3 +34,33 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// ─── Frontend build ───────────────────────────────────────────────────────────
+
+def frontendDir = "$projectDir/src/frontend"
+
+task npmInstall(type: Exec) {
+	workingDir frontendDir
+	commandLine 'npm', 'install'
+	inputs.file "$frontendDir/package.json"
+	outputs.dir "$frontendDir/node_modules"
+}
+
+task buildFrontend(type: Exec, dependsOn: npmInstall) {
+	workingDir frontendDir
+	commandLine 'npm', 'run', 'build'
+	inputs.dir "$frontendDir/src"
+	inputs.file "$frontendDir/index.html"
+	outputs.dir "$frontendDir/dist"
+}
+
+task cleanStatic(type: Delete) {
+    delete "$projectDir/src/main/resources/static"
+}
+
+task copyFrontend(type: Copy, dependsOn: buildFrontend) {
+	from "$frontendDir/dist"
+	into "$projectDir/src/main/resources/static"
+}
+
+processResources.dependsOn copyFrontend
