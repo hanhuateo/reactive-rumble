@@ -9,9 +9,9 @@ export default function Leaderboard({ entries }) {
             ) : (
                 <ol className="space-y-1">
                     {entries.map((entry, i) => (
-                        <li key={entry.playerId} className="flex justify-between items-center text-xs font-mono">
+                        <li key={entry.username} className="flex justify-between items-center text-xs font-mono">
                             <span className={`font-bold ${i === 0 ? "text-yellow-400" : i === 1 ? "text-gray-300" : i === 2 ? "text-amber-600" : "text-gray-500"}`}>
-                                #{i + 1} {entry.playerId.replace(/^User_/, "")}
+                                #{i + 1} {entry.username}
                             </span>
                             <span className="text-green-400">{entry.score}</span>
                         </li>

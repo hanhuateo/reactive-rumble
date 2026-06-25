@@ -27,11 +27,10 @@ public class PlayerService {
 
     public Mono<Void> addPlayer(String id) {
         return this.profileService.getProfile(id)
-                .defaultIfEmpty(Map.of("username", "Guest", "color", "#00ff00"))
+                .defaultIfEmpty(Map.of("color", "#00ff00"))
                 .flatMap(profile -> {
                     Player newPlayer = new Player(
                             id,
-                            (String) profile.get("username"),
                             List.of(new Point(10, 10), new Point(10, 11), new Point(10, 12)),
                             Direction.UP,
                             (String) profile.get("color"));
@@ -65,7 +64,6 @@ public class PlayerService {
                             // 2. Modify (Create a new record with the updated direction)
                             Player updatedPlayer = new Player(
                                     player.id(),
-                                    player.username(),
                                     player.body(),
                                     newDirection,
                                     player.color());

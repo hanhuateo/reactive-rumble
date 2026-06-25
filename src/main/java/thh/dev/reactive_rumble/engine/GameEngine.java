@@ -20,6 +20,7 @@ import thh.dev.reactive_rumble.model.Player;
 import thh.dev.reactive_rumble.model.Point;
 import thh.dev.reactive_rumble.service.LeaderboardService;
 import thh.dev.reactive_rumble.service.PlayerService;
+import thh.dev.reactive_rumble.service.UserService;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
@@ -27,6 +28,7 @@ import tools.jackson.databind.ObjectMapper;
 public class GameEngine {
     private final PlayerService playerService;
     private final LeaderboardService leaderboardService;
+    private final UserService userService;
     private final Sinks.Many<GameState> gameSink = Sinks.many().replay().latest();
     private final AtomicReference<GameState> state;
     private final ReactiveStringRedisTemplate redisTemplate;
@@ -34,9 +36,10 @@ public class GameEngine {
     private static final String FOOD_KEY = "game:food";
 
     public GameEngine(PlayerService playerService, LeaderboardService leaderboardService,
-            ReactiveStringRedisTemplate redisTemplate, ObjectMapper objectMapper) {
+            UserService userService, ReactiveStringRedisTemplate redisTemplate, ObjectMapper objectMapper) {
         this.playerService = playerService;
         this.leaderboardService = leaderboardService;
+        this.userService = userService;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.state = new AtomicReference<>(new GameState(Map.of(), new Point(5, 5)));
@@ -63,7 +66,9 @@ public class GameEngine {
                         if (head.equals(currentFood)) {
                             foodEaten = true;
                             // Also update high score in background
-                            this.leaderboardService.updateScore(p.id(), moved.body().size()).subscribe();
+                            this.userService.getUserById(p.id())
+                                    .flatMap(user -> this.leaderboardService.updateScore(user.username(), moved.body().size()))
+                                    .subscribe();
                         } else {
                             body.remove(body.size() - 1);
                         }
@@ -96,7 +101,7 @@ public class GameEngine {
             case RIGHT -> new Point(head.x() + 1, head.y());
         };
         body.addFirst(newHead);
-        return new Player(id, player.username(), body, player.direction(), player.color());
+        return new Player(id, body, player.direction(), player.color());
     }
 
     private List<Player> getSurvivors(List<Player> movedPlayers) {

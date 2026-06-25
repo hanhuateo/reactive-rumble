@@ -3,11 +3,11 @@ import GameCanvas from './components/GameCanvas'
 import Leaderboard from './components/Leaderboard'
 import StatusBadge from './components/StatusBadge'
 import ControlsHint from './components/ControlsHint'
+import AuthForm from './components/AuthForm'
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
-	const [username, setUsername] = useState("");
-	const [color, setColor] = useState("#00ff00");
+	const [user, setUser] = useState(null); // { token, id, username, color }
 	const [statusText, setStatusText] = useState("Status: Disconnected");
 	const [gameState, setGameState] = useState(null);
 	const [leaderboard, setLeaderboard] = useState([]);
@@ -15,7 +15,17 @@ export default function App() {
 	const [joining, setJoining] = useState(false);
 	const myPlayerIdRef = useRef(null);
 
-	// SSE stream
+	const authFetch = useCallback((url, options = {}) => {
+		return fetch(url, {
+			...options,
+			headers: {
+				...options.headers,
+				"Authorization": `Bearer ${user?.token}`,
+			},
+		});
+	}, [user]);
+
+	// SSE stream — EventSource can't set headers, permitted without token
 	useEffect(() => {
 		const es = new EventSource("/game/stream");
 		es.onopen = () => setStatusText("Status: Connected (Watching)");
@@ -46,7 +56,7 @@ export default function App() {
 
 	// Keyboard controls
 	const handleKeyDown = useCallback((e) => {
-		if (!myPlayerIdRef.current) return;
+		if (!myPlayerIdRef.current || !user) return;
 		const map = {
 			arrowup: "UP", w: "UP",
 			arrowdown: "DOWN", s: "DOWN",
@@ -56,9 +66,9 @@ export default function App() {
 		const dir = map[e.key.toLowerCase()];
 		if (dir) {
 			e.preventDefault();
-			fetch(`/game/move?id=${myPlayerIdRef.current}&dir=${dir}`, { method: "POST" });
+			authFetch(`/game/move?dir=${dir}`, { method: "POST" });
 		}
-	}, []);
+	}, [user, authFetch]);
 
 	useEffect(() => {
 		window.addEventListener("keydown", handleKeyDown);
@@ -66,24 +76,25 @@ export default function App() {
 	}, [handleKeyDown]);
 
 	const handleJoin = async () => {
-		if (joining) return;
+		if (joining || !user) return;
 		setJoining(true);
-		const id = "User_" + Math.floor(Math.random() * 1000);
 		try {
-			await fetch(`/game/profile/${id}`, {
+			await authFetch("/game/profile", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ username: username || id, color }),
+				body: JSON.stringify({ color: user.color }),
 			});
-			await fetch(`/game/join/${id}`, { method: "POST" });
-			myPlayerIdRef.current = id;
+			await authFetch("/game/join", { method: "POST" });
+			myPlayerIdRef.current = user.id;
 			setJoined(true);
-			setStatusText("Status: Playing as " + (username || id));
+			setStatusText("Status: Playing as " + user.username);
 		} catch {
 			setStatusText("Status: Failed to join");
 		}
 		setJoining(false);
 	};
+
+	if (!user) return <AuthForm onAuth={setUser} />;
 
 	return (
 		<div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col items-center py-8 px-4 font-sans">
@@ -97,22 +108,14 @@ export default function App() {
 
 			{/* Join form */}
 			<div className="flex flex-wrap items-center justify-center gap-3 mb-4">
-				<input
-					type="text"
-					value={username}
-					onChange={(e) => setUsername(e.target.value)}
-					placeholder="Enter name"
-					disabled={joined}
-					className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500 disabled:opacity-50 w-40"
-				/>
+				<span className="text-sm text-gray-400">
+					Logged in as <span className="text-white font-semibold">{user.username}</span>
+				</span>
 				<div className="flex items-center gap-2">
 					<label className="text-xs text-gray-500">Color</label>
-					<input
-						type="color"
-						value={color}
-						onChange={(e) => setColor(e.target.value)}
-						disabled={joined}
-						className="w-9 h-9 rounded-lg border border-gray-700 bg-gray-800 cursor-pointer disabled:opacity-50 p-0.5"
+					<div
+						className="w-6 h-6 rounded-full border border-gray-600"
+						style={{ backgroundColor: user.color }}
 					/>
 				</div>
 				<button
@@ -121,6 +124,12 @@ export default function App() {
 					className="bg-green-600 hover:bg-green-500 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
 				>
 					{joining ? "Joining…" : joined ? "In Game" : "Join Game"}
+				</button>
+				<button
+					onClick={() => { setUser(null); setJoined(false); myPlayerIdRef.current = null; }}
+					className="text-gray-500 hover:text-gray-300 text-xs underline"
+				>
+					Log out
 				</button>
 			</div>
 

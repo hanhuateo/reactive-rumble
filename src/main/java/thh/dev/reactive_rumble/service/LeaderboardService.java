@@ -16,15 +16,15 @@ public class LeaderboardService {
     private final ReactiveStringRedisTemplate redisTemplate;
     private static final String LEADERBOARD_KEY = "game:leaderboard";
 
-    // Adds/Updates a player's score
-    public Mono<Double> updateScore(String playerId, int score) {
+    // Adds/Updates a player's score — member is username, not id
+    public Mono<Double> updateScore(String username, int score) {
         return this.redisTemplate.opsForZSet()
-                .add(LEADERBOARD_KEY, playerId, score)
+                .add(LEADERBOARD_KEY, username, score)
                 .thenReturn((double) score);
     }
 
-    public Mono<Void> removeScore(String playerId) {
-        return this.redisTemplate.opsForZSet().remove(LEADERBOARD_KEY, playerId).then();
+    public Mono<Void> removeScore(String username) {
+        return this.redisTemplate.opsForZSet().remove(LEADERBOARD_KEY, username).then();
     }
 
     // Gets Top 10 Players
