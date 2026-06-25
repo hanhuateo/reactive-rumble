@@ -55,22 +55,30 @@ Originally built with local in-memory state and a Vanilla JS frontend, the proje
 ./gradlew test --tests "thh.dev.reactive_rumble.service.JwtServiceTest"
 ```
 
+**Run only unit tests (no Docker required)**
+```bash
+./gradlew test --tests "thh.dev.reactive_rumble.service.*" --tests "thh.dev.reactive_rumble.filter.*" --tests "thh.dev.reactive_rumble.controller.*"
+```
+
 HTML report: `build/reports/tests/test/index.html`
 
 **Test coverage**
 
-| File | Type | What it covers |
-|---|---|---|
-| `JwtServiceTest` | Unit | Token generation, valid/tampered/expired token |
-| `UserServiceTest` | Unit | Register (success, duplicate), login (success, wrong password, not found), getUserById |
-| `PlayerServiceTest` | Unit | addPlayer (with/without profile), updateDirection (valid, opposite blocked), removePlayer, getAllPlayers |
-| `LeaderboardServiceTest` | Unit | updateScore, removeScore, getTopScores |
-| `ProfileServiceTest` | Unit | saveProfile, getProfile (found, empty) |
-| `JwtAuthFilterTest` | Unit | No header, invalid token, valid token populates security context |
-| `AuthControllerTest` | Unit | Register/login success and error paths (400, 401, 409) |
-| `GameControllerTest` | Unit | join/move/leaderboard/saveProfile/stream; auth via Reactor context |
+| File | Type | Requires | What it covers |
+|---|---|---|---|
+| `JwtServiceTest` | Unit | — | Token generation, valid/tampered/expired token |
+| `UserServiceTest` | Unit | — | Register (success, duplicate), login (success, wrong password, not found), getUserById |
+| `PlayerServiceTest` | Unit | — | addPlayer (with/without profile), updateDirection (valid, opposite blocked), removePlayer, getAllPlayers |
+| `LeaderboardServiceTest` | Unit | — | updateScore, removeScore, getTopScores |
+| `ProfileServiceTest` | Unit | — | saveProfile, getProfile (found, empty) |
+| `JwtAuthFilterTest` | Unit | — | No header, invalid token, valid token populates security context |
+| `AuthControllerTest` | Unit | — | Register/login success and error paths (400, 401, 409) |
+| `GameControllerTest` | Unit | — | join/move/leaderboard/saveProfile/stream; auth via Reactor context |
+| `AuthIntegrationTest` | Integration | Docker | Full HTTP flows against a real Redis container: register, duplicate username, login, wrong password, join with/without JWT |
 
-All tests use **Mockito** with no Spring context or Redis required. Controller tests call methods directly and use `ReactiveSecurityContextHolder` to inject a mock authenticated user — the standard approach in Spring Boot 4, which removed `@WebFluxTest`. For full end-to-end integration tests, add Testcontainers to spin up a real Redis instance.
+**Unit tests** use Mockito with no Spring context or Redis required. Controller tests call methods directly and use `ReactiveSecurityContextHolder` to inject a mock authenticated user — the standard approach in Spring Boot 4, which removed `@WebFluxTest`.
+
+**Integration test** uses Testcontainers to spin up a `redis:7-alpine` container via Docker. Spring is pointed at the container through `@DynamicPropertySource`. Redis is flushed before each test to prevent state leaking between cases. The first run downloads the Docker images; subsequent runs use the local cache and complete in seconds.
 
 ### Getting Started
 
