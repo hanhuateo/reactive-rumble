@@ -43,6 +43,35 @@ Originally built with local in-memory state and a Vanilla JS frontend, the proje
 | `game:leaderboard` | Sorted Set | High scores, ranked by snake length |
 | `game:food` | String (JSON) | Current food position |
 
+### Testing
+
+**Run all tests**
+```bash
+./gradlew test
+```
+
+**Run a specific class**
+```bash
+./gradlew test --tests "thh.dev.reactive_rumble.service.JwtServiceTest"
+```
+
+HTML report: `build/reports/tests/test/index.html`
+
+**Test coverage**
+
+| File | Type | What it covers |
+|---|---|---|
+| `JwtServiceTest` | Unit | Token generation, valid/tampered/expired token |
+| `UserServiceTest` | Unit | Register (success, duplicate), login (success, wrong password, not found), getUserById |
+| `PlayerServiceTest` | Unit | addPlayer (with/without profile), updateDirection (valid, opposite blocked), removePlayer, getAllPlayers |
+| `LeaderboardServiceTest` | Unit | updateScore, removeScore, getTopScores |
+| `ProfileServiceTest` | Unit | saveProfile, getProfile (found, empty) |
+| `JwtAuthFilterTest` | Unit | No header, invalid token, valid token populates security context |
+| `AuthControllerTest` | Unit | Register/login success and error paths (400, 401, 409) |
+| `GameControllerTest` | Unit | join/move/leaderboard/saveProfile/stream; auth via Reactor context |
+
+All tests use **Mockito** with no Spring context or Redis required. Controller tests call methods directly and use `ReactiveSecurityContextHolder` to inject a mock authenticated user — the standard approach in Spring Boot 4, which removed `@WebFluxTest`. For full end-to-end integration tests, add Testcontainers to spin up a real Redis instance.
+
 ### Getting Started
 
 **Prerequisites**
